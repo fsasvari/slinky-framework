@@ -1,2 +1,0 @@
-# slinky
-PHP framework
