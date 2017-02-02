@@ -2,10 +2,10 @@
 
 namespace Slinky\Auth;
 
-use Slinky\Library\Session;
-use Slinky\Library\Cookie;
-use Slinky\Library\Hash;
-use Application\Model\Repository\UserRepository;
+use Slinky\Session\Session;
+use Slinky\Cookie\Cookie;
+use Slinky\Hash\Hash;
+use App\Repository\UserRepository;
 
 use Application\Model\Entity\User;
 
