@@ -11,13 +11,13 @@ class Validator
 {
 	private $db;
 	private $validateFactory;
-	
+
 	private $data = array();
 	private $rules = array();
 	private $messages = array();
-	
+
 	private $error = false;
-	
+
 	private $messages_default = array(
 		'required' => 'The {field} field is required.',
 		'string' => 'The {field} field must be a string.',
@@ -41,8 +41,8 @@ class Validator
 		'exists' => 'The {field} field with "{value}" value does not exists.',
 		'size' => 'The {field} field must be maximum {rule_value} size.'
 	);
-	
-	
+
+
 	/**
 	 * @param ValidateFactory $validate_factory
 	 * @param Database $database
@@ -53,8 +53,8 @@ class Validator
 		$this->validateFactory = $validate_factory;
 		$this->db = $database;
 	}
-	
-	
+
+
 	/**
 	 * @param array $data
 	 * @param array $rules required|min:x|max:y|range:x,y|minlegth:x|maxlength:y|rangelength:x,y|email|url|equalto
@@ -64,20 +64,20 @@ class Validator
 	public function make($data, $rules, $messages = array())
 	{
 		$this->reset();
-		
+
 		$this->data = $data;
 		$this->setRules($rules);
 		$this->messages = $messages;
-		
-		//$this->validate();
-		
-		//return $this->validateFactory->build($this->error, $this->messages);
+
+		$this->validate();
+
+		return $this->validateFactory->build($this->error, $this->messages);
 	}
-	
-	
+
+
 	/**
 	 * Reset error status and messages
-	 * 
+	 *
 	 * @return void
 	 */
 	private function reset()
@@ -85,54 +85,52 @@ class Validator
 		$this->error = false;
 		$this->messages = [];
 	}
-	
-	
+
+
 	/**
 	 * Set rules
-	 * 
+	 *
 	 * @param array $fields
 	 * @return void
 	 */
 	private function setRules($fields)
 	{
 		$fields_new = [];
-		
+
 		foreach ($fields as $field => $rules) {
 			$fields_new[$field] = $this->getRules($rules);
 		}
-		
-		var_dump($fields_new);
-		
+
 		$this->rules = $fields_new;
 	}
-	
-	
+
+
 	/**
 	 * Get rules from array or string separated with |
-	 * 
+	 *
 	 * @param string/array
 	 * @return array
 	 */
 	private function getRules($rules)
 	{
 		$rules_new = [];
-		
+
 		if (!is_array($rules)) {
 			$rules = explode('|', $rules);
 		}
-		
+
 		foreach ($rules as $values) {
 			$rule_and_values = $this->getRuleAndValues($values);
 			$rules_new[$rule_and_values[0]] = $this->getValues($rule_and_values[1]);
 		}
-		
+
 		return $rules_new;
 	}
-	
-	
+
+
 	/**
 	 * Get rule and values (value1, value2) as array
-	 * 
+	 *
 	 * @param array|string $values
 	 * @return array
 	 */
@@ -141,18 +139,18 @@ class Validator
 		if (!is_array($values)) {
 			$values = explode(':', $values);
 		}
-		
+
 		if (count($values) < 2) {
 			$values[1] = true;
 		}
-		
+
 		return $values;
 	}
-	
+
 
 	/**
 	 * Get values as array
-	 * 
+	 *
 	 * @param array|string $values
 	 * @return array
 	 */
@@ -161,14 +159,14 @@ class Validator
 		if (!is_array($values)) {
 			$values = explode(',', $values);
 		}
-		
+
 		return $values;
 	}
-	
-	
+
+
 	/**
 	 * Validate data with selected rules
-	 * 
+	 *
 	 * @return void
 	 */
 	private function validate()
@@ -177,8 +175,8 @@ class Validator
 		foreach ($this->rules as $field => $rules) {
 			// fetch rules of specific field
 			foreach ($rules as $rule) {
-				$validate_method = $this->getValidateMethod($rule['rule']); 
-				
+				$validate_method = $this->getValidateMethod($rule['rule']);
+
 				if (isset($rule['value2'])) {
 					$error = $this->{$validate_method}($field, $rule['value1'], $rule['value2']);
 				} elseif (isset($rule['value1'])) {
@@ -186,32 +184,32 @@ class Validator
 				} else {
 					$error = $this->{$validate_method}($field);
 				}
-				
+
 				if ($error) {
 					$this->setError($rule, $field);
 				}
 			}
 		}
 	}
-	
-	
+
+
 	/**
 	 * Return validation method
-	 * 
+	 *
 	 * @param string $rule
 	 * @return string
 	 */
 	private function getValidateMethod($rule)
 	{
 		$validate_method = 'validate' . str_studly_caps($rule);
-		
+
 		if (!method_exists($this, $validate_method)) {
 			throw new MethodNotFoundException('Validation method does not exists: ' . $validate_method);
 		}
-		
+
 		return $validate_method;
 	}
-	
+
 
 	/**
 	 * @param string $rule
@@ -229,8 +227,8 @@ class Validator
 			$this->error_messages[$field][] = $this->getMessageDefault($rule, $field);
 		}
 	}
-	
-	
+
+
 	/**
 	 * @param array $rule
 	 * @param string $field
@@ -252,11 +250,11 @@ class Validator
 			isset($rule['value1']) ? $rule['value1'] : '',
 			isset($rule['value2']) ? $rule['value2'] : ''
 		);
-		
+
 		return str_replace($from, $to, $this->messages_default[$rule['rule']]);
 	}
-	
-	
+
+
 	/**
 	 * @param string $field
 	 * @return bool
@@ -269,11 +267,11 @@ class Validator
 			return false;
 		}
 	}
-	
-	
+
+
 	/**
 	 * Validate minimum integer value
-	 * 
+	 *
 	 * @param string $field
 	 * @param int $min
 	 * @return bool
@@ -286,11 +284,11 @@ class Validator
 			return false;
 		}
 	}
-	
-	
+
+
 	/**
 	 * Validate maximum integer value
-	 * 
+	 *
 	 * @param string $field
 	 * @param int $max
 	 * @return bool
@@ -303,11 +301,11 @@ class Validator
 			return false;
 		}
 	}
-	
-	
+
+
 	/**
 	 * Validate minimum and maximum integer value
-	 * 
+	 *
 	 * @param string $field
 	 * @param int $min
 	 * @param int $max
@@ -321,11 +319,11 @@ class Validator
 			return false;
 		}
 	}
-	
-	
+
+
 	/**
 	 * Validate minimum string length
-	 * 
+	 *
 	 * @param string $field
 	 * @param int $min
 	 * @return bool
@@ -338,11 +336,11 @@ class Validator
 			return false;
 		}
 	}
-	
-	
+
+
 	/**
 	 * Validate maximum string length
-	 * 
+	 *
 	 * @param string $field
 	 * @param int $max
 	 * @return bool
@@ -355,11 +353,11 @@ class Validator
 			return false;
 		}
 	}
-	
-	
+
+
 	/**
 	 * Validate minimum and maximum string length
-	 * 
+	 *
 	 * @param string $field
 	 * @param int $min
 	 * @param int $max
@@ -373,8 +371,8 @@ class Validator
 			return false;
 		}
 	}
-	
-	
+
+
 	/**
 	 * @param string $field
 	 * @return bool
@@ -387,8 +385,8 @@ class Validator
 			return false;
 		}
 	}
-	
-	
+
+
 	/**
 	 * @param string $field
 	 * @return bool
@@ -401,8 +399,8 @@ class Validator
 			return false;
 		}
 	}
-	
-	
+
+
 	/**
 	 * @param string $field
 	 * @param string $field_equal_to
@@ -416,8 +414,8 @@ class Validator
 			return false;
 		}
 	}
-	
-	
+
+
 	/**
 	 * @param string $field
 	 * @param string $date_format
@@ -426,15 +424,15 @@ class Validator
 	private function validateDateFormat($field, $date_format)
 	{
 		$date = date_parse_from_format($date_format, $this->data[$field]);
-		
+
 		if (isset($this->data[$field]) && $date['error_count'] > 0) {
 			return true;
 		} else {
 			return false;
 		}
 	}
-	
-	
+
+
 	/**
 	 * @param string $field
 	 * @param string $table
@@ -448,8 +446,8 @@ class Validator
 			return false;
 		}
 	}
-	
-	
+
+
 	/**
 	 * @param string $field
 	 * @param string $table
@@ -463,8 +461,8 @@ class Validator
 			return false;
 		}
 	}
-	
-	
+
+
 	/**
 	 * @param string $field
 	 * @param string $table
@@ -473,11 +471,11 @@ class Validator
 	private function getDatabaseData($field, $table)
 	{
 		$query = 'SELECT ' . $field . ' FROM ' . $table . ' WHERE ' . $field . ' = :' . $field;
-		
+
 		$bind = array (
 			$field => $this->data[$field]
 		);
-		
+
 		return $this->db->query($query)->bind($bind)->first();
 	}
 }
