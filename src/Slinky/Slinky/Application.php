@@ -231,6 +231,31 @@ class Application
     }
 
 	/**
+     * Get the path to the storage directory
+     *
+	 * @param string $file
+     * @return string
+     */
+    public function elixir($file)
+    {
+        $path = $this->publicPath().'rev-manifest.json';
+
+		if (file_exists($path)) {
+            $manifest = json_decode(file_get_contents($path), true);
+        }
+
+		if (isset($manifest[$file])) {
+            return $manifest[$file];
+        }
+
+		$unversioned = $this->publicPath().$file;
+
+        if (file_exists($unversioned)) {
+            return $file;
+        }
+    }
+
+	/**
 	 * Register the core class aliases in the container
 	 *
 	 * @return void
