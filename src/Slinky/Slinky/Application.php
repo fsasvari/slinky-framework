@@ -14,88 +14,88 @@ class Application
      * @const string
      */
     const VERSION = '0.1';
-	
+
     /**
      * The base path for the Slinky installation
      *
      * @var string
      */
     private $basePath;
-	
+
 	/**
 	 * DI Container class instance
-	 * 
-	 * @var Container 
+	 *
+	 * @var Container
 	 */
 	private $container;
-	
+
 	/**
 	 * Config class instance
-	 * 
-	 * @var Config 
+	 *
+	 * @var Config
 	 */
 	private $config;
-	
+
 	/**
 	 * Create new application instance
-	 * 
+	 *
 	 * @return void
 	 */
 	public function __construct($basePath)
 	{
 		$this->setBasePath($basePath);
-		
+
 		$this->createContainer();
-		
+
 		$this->init();
 	}
-	
+
 	/**
 	 * Set application base path
-	 * 
+	 *
 	 * @param string $basePath
 	 */
 	private function setBasePath($basePath)
 	{
 		$this->basePath = rtrim($basePath, '\/') . DIRECTORY_SEPARATOR;
 	}
-	
+
 	/**
 	 * Create DI Container
-	 * 
+	 *
 	 * @return void
 	 */
 	private function createContainer()
 	{
 		$this->container = $container = new Container();
-		
+
 		$this->container->set('Container', function() use ($container) {
 			return $container;
 		});
 	}
-	
+
 	/**
 	 * Initialize application
-	 * 
+	 *
 	 * @return void
 	 */
 	private function init()
 	{
 		session_save_path($this->sessionPath());
 		session_start();
-		
+
 		$this->loadEnv($this->basePath());
 		$this->loadConfig($this->configPath());
-		
+
 		date_default_timezone_set($this->config->get('app.timezone'));
 		mb_internal_encoding($this->config->get('app.encoding'));
-		
+
 		$this->registerContainerAliases();
 	}
-	
+
 	/**
 	 * Load enviroment file
-	 * 
+	 *
 	 * @param string $path
 	 * @return void
 	 */
@@ -104,32 +104,32 @@ class Application
 		$dotenv = new Dotenv($path);
 		$dotenv->load();
 	}
-	
+
 	/**
 	 * Load config file
-	 * 
+	 *
 	 * @param string $path Path to config directory
 	 * @return void
 	 */
 	private function loadConfig($path)
 	{
 		$this->config = $config = new Config(include $path . 'config.php');
-		
+
 		$this->container->set('Config', function() use ($config) {
 			return $config;
 		});
 	}
-	
+
 	/**
 	 * Enable access to the DI container
-	 * 
+	 *
 	 * @return Container
 	 */
 	public function getContainer()
 	{
 		return $this->container;
 	}
-	
+
 	/**
      * Get the base path of the Slinky installation
      *
@@ -139,7 +139,7 @@ class Application
     {
         return $this->basePath;
     }
-	
+
 	/**
      * Get the path to the application root
      *
@@ -149,7 +149,7 @@ class Application
     {
         return $this->basePath() . 'app' . DIRECTORY_SEPARATOR;
     }
-	
+
 	/**
      * Get the path to the language directory
      *
@@ -157,9 +157,9 @@ class Application
      */
     public function languagePath()
     {
-        return $this->appPath() . 'Language' . DIRECTORY_SEPARATOR;
+        return $this->resourcePath() . 'lang' . DIRECTORY_SEPARATOR;
     }
-	
+
 	/**
      * Get the path to the application configuration
      *
@@ -169,7 +169,7 @@ class Application
     {
         return $this->basePath() . 'config' . DIRECTORY_SEPARATOR;
     }
-	
+
 	/**
      * Get the path to the storage directory
      *
@@ -179,7 +179,17 @@ class Application
     {
         return $this->basePath() . 'storage' . DIRECTORY_SEPARATOR;
     }
-	
+
+	/**
+     * Get the path to the resources directory
+     *
+     * @return string
+     */
+    public function resourcePath()
+    {
+        return $this->basePath() . 'resources' . DIRECTORY_SEPARATOR;
+    }
+
 	/**
      * Get the path to the cache directory
      *
@@ -189,7 +199,7 @@ class Application
     {
         return $this->storagePath() . 'cache' . DIRECTORY_SEPARATOR;
     }
-	
+
 	/**
      * Get the path to the log directory
      *
@@ -199,7 +209,7 @@ class Application
     {
         return $this->storagePath() . 'log' . DIRECTORY_SEPARATOR;
     }
-	
+
 	/**
      * Get the path to the session directory
      *
@@ -209,7 +219,7 @@ class Application
     {
         return $this->storagePath() . 'session' . DIRECTORY_SEPARATOR;
     }
-	
+
 	/**
      * Get the path to the public web directory
      *
@@ -217,12 +227,12 @@ class Application
      */
     public function publicPath()
     {
-        return $this->basePath() . 'public' . DIRECTORY_SEPARATOR;
+        return $this->basePath() . 'public_html' . DIRECTORY_SEPARATOR;
     }
-	
+
 	/**
 	 * Register the core class aliases in the container
-	 * 
+	 *
 	 * @return void
 	 */
 	private function registerContainerAliases()
@@ -260,86 +270,86 @@ class Application
 			'ValidateFactory' => 'Slinky\Validation\ValidateFactory',
 			'Validator' => 'Slinky\Validation\Validator',
 		];
-		
+
 		foreach ($aliases as $key => $alias) {
             $this->container->alias($key, $alias);
         }
 	}
-	
+
 	/**
 	 * Register the core class dependencies based on config in the container
-	 * 
+	 *
 	 * @return void
 	 */
 	private function registerContainerDependencies()
 	{
 		$container = $this->container;
 		$config = $this->config;
-		
+
 		$languagePath = $this->languagePath();
 		$responsePath = $this->appPath() . 'View' . DIRECTORY_SEPARATOR . 'Web' . DIRECTORY_SEPARATOR;
 		$logPath = $this->logPath();
 		$cachePath = $this->cachePath();
-		
+
 		$container->set('Translation', function() use ($container, $languagePath) {
 			return new \Slinky\Translation\Translation($container->get('File'), $languagePath);
 		});
-		
+
 		$container->set('Language', function() use ($container, $config) {
 			return new \Slinky\Translation\Language($container->get('Translation'), $config->get('language.default'), $config->get('language.allowed'));
 		});
-		
+
 		$container->set('Response', function() use ($container, $responsePath) {
 			return new \Slinky\Http\Response($container->get('File'), $container->get('Redirect'), $container->get('Session'), $container->get('Header'), $container->get('Status'), $responsePath);
 		});
-		
+
 		$container->set('Log', function() use ($container, $logPath) {
 			return new \Slinky\Log\Log($container->get('File'), $logPath);
 		});
-		
+
 		$container->set('Cache', function() use ($container, $cachePath, $config) {
 			return new \Slinky\Cache\Cache($container->get('File'), $cachePath, $config->get('cache.type'));
 		});
-		
+
 		$container->set('ImageFactory', function() use ($config) {
 			return new \Slinky\Image\ImageFactory($config->get('image.driver'));
 		});
-		
+
 		$container->set('Crypt', function() use ($config) {
 			if ($config->get('app.cipher')) {
 				return new \Slinky\Encryption\Crypt($config->get('app.key'), $config->get('app.cipher'));
 			}
-			
+
 			return new \Slinky\Encryption\Crypt($config->get('app.key'));
 		});
-		
+
 		$container->set('Hybridauth', function() use ($config) {
 			return new \Hybrid_Auth($config->get('social'));
 		});
 	}
-	
+
 	/**
 	 * Register error, exception and shutdown handlers
-	 * 
+	 *
 	 * @return void
 	 */
 	private function registerErrorHandlers()
 	{
 		$this->container->get('HandleExceptions');
 	}
-	
+
 	/**
 	 * Load all application routes from routes.php
-	 * 
+	 *
 	 * @return void
 	 */
 	private function loadRoutes()
 	{
 		$routes_file = $this->appPath() . 'Controller' . DIRECTORY_SEPARATOR . 'routes.php';
-		
+
 		$this->container->get('File')->load($routes_file, ['app' => $this]);
 	}
-	
+
 	/**
      * Get or check the current application environment
      *
@@ -350,31 +360,31 @@ class Application
 	{
 		if (func_num_args() > 0) {
             $patterns = is_array(func_get_arg(0)) ? func_get_arg(0) : func_get_args();
-			
+
             foreach ($patterns as $pattern) {
                 if ($pattern == $this->config->get('app.env')) {
                     return true;
                 }
             }
-			
+
             return false;
         }
-		
+
 		return $this->config->get('app.env');
 	}
-	
+
 	/**
 	 * Register error handlers, load routes and run the application
-	 * 
+	 *
 	 * @return void
 	 */
 	public function run()
 	{
 		$this->registerContainerDependencies();
 		$this->registerErrorHandlers();
-		
+
 		$this->loadRoutes();
-		
+
 		$this->container->get('Router')->route();
 		$this->container->get('Dispatcher')->dispatch();
 	}
